@@ -40,3 +40,67 @@ jobs:
           name: build-log
           path: build.log
           if-no-files-found: ignore
+
+  screenshots:
+    name: Simulator screenshots
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for the Simulator
+        run: |
+          xcodebuild \
+            -project Closet.xcodeproj \
+            -scheme Closet \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build > sim-build.log 2>&1 || { grep -E "error: " sim-build.log | sort -u | head -100; tail -n 40 sim-build.log; exit 1; }
+
+      - name: Boot an iPhone
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          phones = [(runtime, d) for runtime, items in devices.items() if "iOS" in runtime
+                    for d in items if d["name"].startswith("iPhone") and "Pro" in d["name"] and "Max" not in d["name"]]
+          phones.sort(key=lambda pair: pair[0])
+          print(phones[-1][1]["udid"])
+          ')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 || true
+
+      - name: Capture screens
+        run: |
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Closet.app
+          mkdir -p shots
+          shoot() {
+            local name=$1 wait=$2; shift 2
+            xcrun simctl terminate "$UDID" com.naderious.closet >/dev/null 2>&1 || true
+            xcrun simctl launch "$UDID" com.naderious.closet "$@"
+            sleep "$wait"
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+          shoot 01-empty 4
+          shoot 02-home 6 -seedDemo
+          shoot 03-home-animating 1.1
+          shoot 04-wardrobe 3 -route wardrobe
+          shoot 05-wardrobe-expanded 3 -route wardrobe -expandAll
+          shoot 06-scan 3 -route scan
+          shoot 07-editor 3 -route editor
+          xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "Closet"' > shots/app-log.txt 2>&1 || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            shots
+            sim-build.log
+          if-no-files-found: ignore

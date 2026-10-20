@@ -56,6 +56,7 @@ struct HomeView: View {
             .entrance(0.18, from: CGSize(width: 0, height: 24))
         }
         .onAppear { outfits.sync(with: store) }
+        .onChange(of: store.items.count) { _, _ in outfits.sync(with: store) }
     }
 }
 

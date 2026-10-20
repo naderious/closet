@@ -6,8 +6,9 @@ enum CameraState: Equatable {
     case idle, running, denied, unavailable
 }
 
-/// Runs the back camera for the scan screen and captures stills.
-final class CameraController: NSObject, AVCapturePhotoCaptureDelegate {
+/// Runs the back camera for the scan screen and captures stills. All mutable state
+/// is only touched on `queue`, which is what makes the unchecked Sendable safe.
+final class CameraController: NSObject, AVCapturePhotoCaptureDelegate, @unchecked Sendable {
     enum CaptureError: Error {
         case notRunning, noData
     }

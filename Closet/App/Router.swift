@@ -42,6 +42,11 @@ final class Router {
         }
     }
 
+    /// Switches screens without a transition (used for launch shortcuts).
+    func jump(to destination: Route) {
+        route = destination
+    }
+
     func showToast(_ message: String) {
         withAnimation(Motion.snappy) { toast = message }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
