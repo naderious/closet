@@ -114,5 +114,11 @@ in `Theme.swift`.
 
 ## CI
 
-`.github/workflows/ios-build.yml` compiles the app with `xcodebuild` on a macOS runner for every
-push.
+`.github/workflows/ios-build.yml` runs on every push:
+
+- **Build (unsigned)** compiles a Release build for iOS devices with `xcodebuild`.
+- **Simulator screenshots** boots an iPhone Simulator, opens each screen with the demo wardrobe,
+  and uploads the screenshots as a build artifact.
+
+To get the screenshots committed to the branch instead (in `ci-screenshots/`), run the workflow
+manually from the Actions tab with **commit_screenshots** checked.
