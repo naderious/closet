@@ -68,6 +68,18 @@ struct ItemEditorView: View {
                 .padding(.bottom, 32)
             }
             .scrollDismissesKeyboard(.interactively)
+            .mask {
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0), location: 0),
+                        .init(color: .black, location: 0.03),
+                        .init(color: .black, location: 0.92),
+                        .init(color: .black.opacity(0), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
 
             PillButton(title: current.isNew ? "add to closet" : "save", isBusy: isSaving) {
                 save()

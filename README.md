@@ -24,6 +24,16 @@ app icon is in the asset catalog.
    reports that the bundle identifier is taken, change `com.naderious.closet` to anything unique.
 3. Pick your iPhone and press **Run**.
 
+### Preview without scanning (debug builds only)
+
+Under **Product → Scheme → Edit Scheme → Run → Arguments**, add:
+
+- `-seedDemo` fills an empty wardrobe with simple drawn sample pieces
+- `-route wardrobe` (or `scan`, `editor`) opens a screen directly
+- `-expandAll` unfolds every wardrobe section
+
+None of this is compiled into release builds or the IPA.
+
 ## Build an IPA
 
 1. Choose **Any iOS Device (arm64)** as the run destination.
