@@ -5,8 +5,8 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      inline_screenshots:
-        description: Also print small JPEG copies of the screenshots into the log (base64)
+      commit_screenshots:
+        description: Commit small JPEG copies of the screenshots to this branch (ci-screenshots/)
         type: boolean
         default: false
 
@@ -50,6 +50,8 @@ jobs:
     name: Simulator screenshots
     runs-on: macos-latest
     timeout-minutes: 40
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -100,17 +102,19 @@ jobs:
           shoot 07-editor 3 -route editor
           xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "Closet"' > shots/app-log.txt 2>&1 || true
 
-      - name: Print screenshots into the log
-        if: ${{ inputs.inline_screenshots }}
+      - name: Commit screenshots to the branch
+        if: ${{ inputs.commit_screenshots }}
         run: |
+          mkdir -p ci-screenshots
           for f in shots/*.png; do
-            sips -s format jpeg -s formatOptions 60 --resampleWidth 420 "$f" --out "${f%.png}.jpg" >/dev/null
-            echo "=== BEGIN $(basename "${f%.png}") ==="
-            base64 -i "${f%.png}.jpg" | fold -w 1000
-            echo "=== END ==="
+            sips -s format jpeg -s formatOptions 70 --resampleWidth 590 "$f" --out "ci-screenshots/$(basename "${f%.png}").jpg" >/dev/null
           done
-          echo "=== APP LOG ==="
-          grep -iE "error|fault|crash|closet" shots/app-log.txt | tail -n 40 || true
+          cp shots/app-log.txt ci-screenshots/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci-screenshots
+          git commit -m "CI: simulator screenshots [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Upload screenshots
         if: always()
