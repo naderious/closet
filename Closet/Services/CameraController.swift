@@ -24,6 +24,11 @@ final class CameraController: NSObject, AVCapturePhotoCaptureDelegate, @unchecke
         let finish: (CameraState) -> Void = { state in
             DispatchQueue.main.async { completion(state) }
         }
+        // No camera (e.g. the Simulator): don't ask for a permission we can't use.
+        guard AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) != nil else {
+            finish(.unavailable)
+            return
+        }
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             startSession(finish)

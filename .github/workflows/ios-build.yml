@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      inline_screenshots:
+        description: Also print small JPEG copies of the screenshots into the log (base64)
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -94,6 +99,18 @@ jobs:
           shoot 06-scan 3 -route scan
           shoot 07-editor 3 -route editor
           xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "Closet"' > shots/app-log.txt 2>&1 || true
+
+      - name: Print screenshots into the log
+        if: ${{ inputs.inline_screenshots }}
+        run: |
+          for f in shots/*.png; do
+            sips -s format jpeg -s formatOptions 60 --resampleWidth 420 "$f" --out "${f%.png}.jpg" >/dev/null
+            echo "=== BEGIN $(basename "${f%.png}") ==="
+            base64 -i "${f%.png}.jpg" | fold -w 1000
+            echo "=== END ==="
+          done
+          echo "=== APP LOG ==="
+          grep -iE "error|fault|crash|closet" shots/app-log.txt | tail -n 40 || true
 
       - name: Upload screenshots
         if: always()
